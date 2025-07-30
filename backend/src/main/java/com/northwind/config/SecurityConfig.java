@@ -26,7 +26,7 @@ public class SecurityConfig {
                 // その他すべてのリクエストを許可
                 .anyRequest().permitAll()
             )
-            .headers(headers -> headers.frameOptions().disable()); // H2コンソール用
+            .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable())); // H2コンソール用
 
         return http.build();
     }
