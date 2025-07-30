@@ -62,7 +62,9 @@ See [ER-Diagram.md](./ER-Diagram.md) for detailed database schema visualization.
 
 3. The backend will start on `http://localhost:8080`
 
-4. Access the API documentation at: `http://localhost:8080/swagger-ui.html`
+4. Access the API documentation at: 
+`http://localhost:8080/swagger-ui.html`
+`http://localhost:8080/Northwind2/swagger-ui.html`
 
 5. Access H2 Database Console at: `http://localhost:8080/h2-console`
    - JDBC URL: `jdbc:h2:mem:northwind`
