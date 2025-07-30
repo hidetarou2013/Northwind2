@@ -116,6 +116,108 @@ See [ER-Diagram.md](./ER-Diagram.md) for detailed database schema visualization.
 - `PUT /api/products/{id}` - Update product
 - `DELETE /api/products/{id}` - Delete product
 
+## 🇯🇵 日本語ドキュメント
+
+### バックエンド起動方法
+
+#### 前提条件
+- Java 21以上がインストールされていること
+- Gradleが利用可能であること
+
+#### 起動手順
+1. バックエンドディレクトリに移動：
+   ```bash
+   cd backend
+   ```
+
+2. Spring Bootアプリケーションを起動：
+   ```bash
+   ./gradlew bootRun
+   ```
+   
+   Windowsの場合：
+   ```bash
+   gradlew.bat bootRun
+   ```
+
+3. アプリケーションが起動したら、以下のURLでアクセス可能：
+   - メインアプリケーション: `http://localhost:8080`
+   - Swagger UI (API ドキュメント): `http://localhost:8080/swagger-ui.html`
+   - H2 データベースコンソール: `http://localhost:8080/h2-console`
+
+### サービスポート
+- **バックエンド**: `8080`
+- **フロントエンド**: `3000`
+
+### RESTful API CRUD URI
+
+#### 商品管理 (Products)
+| 操作 | HTTPメソッド | URI | 説明 |
+|------|-------------|-----|------|
+| 全件取得（ページネーション） | GET | `/api/products` | ページネーション付きで全商品を取得 |
+| 全件取得 | GET | `/api/products/all` | ページネーションなしで全商品を取得 |
+| 1件取得 | GET | `/api/products/{id}` | ID指定で商品を取得 |
+| アクティブ商品取得 | GET | `/api/products/active` | アクティブな商品のみ取得 |
+| 商品検索 | GET | `/api/products/search?name={name}` | 商品名で検索 |
+| カテゴリ別商品取得 | GET | `/api/products/category/{categoryId}` | カテゴリID指定で商品を取得 |
+| 在庫不足商品取得 | GET | `/api/products/low-stock` | 在庫不足の商品を取得 |
+| 新規作成 | POST | `/api/products` | 新商品を登録 |
+| 更新 | PUT | `/api/products/{id}` | 既存商品を更新 |
+| 削除 | DELETE | `/api/products/{id}` | 商品を削除 |
+
+#### データベース接続情報
+- **H2 データベースコンソール**: `http://localhost:8080/h2-console`
+- **JDBC URL**: `jdbc:h2:mem:northwind`
+- **ユーザー名**: `sa`
+- **パスワード**: (空)
+
+### フロントエンド起動方法
+
+#### 前提条件
+- Node.js 16以上がインストールされていること
+- npmが利用可能であること
+
+#### 起動手順
+1. フロントエンドディレクトリに移動：
+   ```bash
+   cd frontend
+   ```
+
+2. 依存関係をインストール：
+   ```bash
+   npm install
+   ```
+
+3. 開発サーバーを起動：
+   ```bash
+   npm start
+   ```
+
+4. アプリケーションが起動したら、以下のURLでアクセス可能：
+   - メインアプリケーション: `http://localhost:3000`
+   - 商品ダッシュボード: `http://localhost:3000`
+
+### フロントエンドURL構成
+
+#### メインページ
+- **アプリケーション**: `http://localhost:3000`
+  - Northwind Trading Systemのメインダッシュボード
+  - 商品管理機能
+  - データグリッド表示
+
+#### 主要機能
+- **商品ダッシュボード**: 商品一覧、検索、フィルタリング
+- **商品管理**: 商品のCRUD操作
+- **在庫管理**: 在庫状況の確認
+- **カテゴリ管理**: 商品カテゴリの管理
+
+#### 技術仕様
+- **フレームワーク**: React 19.1.0 with TypeScript
+- **UIライブラリ**: Material-UI (MUI) 7.2.0
+- **データグリッド**: MUI X Data Grid 8.9.1
+- **HTTP通信**: Axios 1.11.0
+- **API接続**: `http://localhost:8080/api`
+
 ## 🎯 Features
 
 ### Current Features
