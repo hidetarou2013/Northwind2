@@ -6,7 +6,6 @@ import {
   Typography,
   TextField,
   Button,
-  Grid,
   Chip,
   Alert,
   CircularProgress,
@@ -87,21 +86,21 @@ const ProductDashboard: React.FC = () => {
       field: 'category',
       headerName: 'Category',
       width: 150,
-      valueGetter: (params) => params.row.category?.name || 'N/A',
+      valueGetter: (params: any) => params.row.category?.name || 'N/A',
     },
     {
       field: 'unitPrice',
       headerName: 'Unit Price',
       width: 120,
       type: 'number',
-      valueFormatter: (params) => `$${params.value?.toFixed(2) || '0.00'}`,
+      valueFormatter: (params: any) => `$${params.value?.toFixed(2) || '0.00'}`,
     },
     {
       field: 'unitsInStock',
       headerName: 'Stock',
       width: 100,
       type: 'number',
-      renderCell: (params) => {
+      renderCell: (params: any) => {
         const isLowStock = lowStockProducts.some(p => p.productId === params.row.productId);
         return (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -121,7 +120,7 @@ const ProductDashboard: React.FC = () => {
       field: 'discontinued',
       headerName: 'Status',
       width: 120,
-      renderCell: (params) => (
+      renderCell: (params: any) => (
         <Chip
           label={params.value ? 'Discontinued' : 'Active'}
           color={params.value ? 'error' : 'success'}
@@ -164,56 +163,48 @@ const ProductDashboard: React.FC = () => {
         </Alert>
       )}
 
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom>
-                Total Products
-              </Typography>
-              <Typography variant="h4">
-                {products.length}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom>
-                Active Products
-              </Typography>
-              <Typography variant="h4">
-                {products.filter(p => !p.discontinued).length}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom>
-                Low Stock Items
-              </Typography>
-              <Typography variant="h4" color="warning.main">
-                {lowStockProducts.length}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom>
-                Discontinued
-              </Typography>
-              <Typography variant="h4">
-                {products.filter(p => p.discontinued).length}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 3, mb: 3 }}>
+        <Card>
+          <CardContent>
+            <Typography color="textSecondary" gutterBottom>
+              Total Products
+            </Typography>
+            <Typography variant="h4">
+              {products.length}
+            </Typography>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent>
+            <Typography color="textSecondary" gutterBottom>
+              Active Products
+            </Typography>
+            <Typography variant="h4">
+              {products.filter(p => !p.discontinued).length}
+            </Typography>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent>
+            <Typography color="textSecondary" gutterBottom>
+              Low Stock Items
+            </Typography>
+            <Typography variant="h4" color="warning.main">
+              {lowStockProducts.length}
+            </Typography>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent>
+            <Typography color="textSecondary" gutterBottom>
+              Discontinued
+            </Typography>
+            <Typography variant="h4">
+              {products.filter(p => p.discontinued).length}
+            </Typography>
+          </CardContent>
+        </Card>
+      </Box>
 
       <Box sx={{ mb: 2, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
         <TextField
@@ -253,10 +244,14 @@ const ProductDashboard: React.FC = () => {
               rows={filteredProducts}
               columns={columns}
               getRowId={(row) => row.productId}
-              pageSize={25}
-              rowsPerPageOptions={[10, 25, 50, 100]}
+              initialState={{
+                pagination: {
+                  paginationModel: { page: 0, pageSize: 25 },
+                },
+              }}
+              pageSizeOptions={[10, 25, 50, 100]}
               checkboxSelection={false}
-              disableSelectionOnClick={false}
+              disableRowSelectionOnClick={false}
               onRowClick={handleRowClick}
               loading={loading}
               density="compact"
@@ -273,4 +268,4 @@ const ProductDashboard: React.FC = () => {
   );
 };
 
-export default ProductDashboard;
+export default ProductDashboard; 
