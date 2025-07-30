@@ -9,6 +9,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 public class NorthwindApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(NorthwindApplication.java, args);
+        SpringApplication.run(NorthwindApplication.class, args);
     }
 }

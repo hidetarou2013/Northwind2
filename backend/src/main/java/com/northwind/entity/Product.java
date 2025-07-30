@@ -41,6 +41,7 @@ public class Product extends BaseEntity {
     private Integer reorderLevel;
     
     @Column(name = "discontinued")
+    @Builder.Default
     private Boolean discontinued = false;
     
     @ManyToOne(fetch = FetchType.LAZY)
