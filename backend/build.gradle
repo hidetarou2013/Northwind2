@@ -46,6 +46,7 @@ dependencies {
     
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
     
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
@@ -58,4 +59,8 @@ tasks.named('test') {
 // Ensure annotation processors work correctly
 tasks.withType(JavaCompile) {
     options.annotationProcessorPath = configurations.annotationProcessor
+    options.compilerArgs += [
+        '-Amapstruct.defaultComponentModel=spring',
+        '-Amapstruct.verbose=true'
+    ]
 }
