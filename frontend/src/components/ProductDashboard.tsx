@@ -38,6 +38,8 @@ const ProductDashboard: React.FC = () => {
         productService.getLowStockProducts()
       ]);
       
+      console.log('Products loaded:', data);
+      console.log('Low stock products:', lowStock);
       setProducts(data);
       setLowStockProducts(lowStock);
       setDataReady(true);
@@ -75,21 +77,18 @@ const ProductDashboard: React.FC = () => {
     { 
       field: 'productId', 
       headerName: 'ID', 
-      width: 70,
-      valueGetter: (params: any) => params.row?.productId || 'N/A'
+      width: 70
     },
     { 
       field: 'code', 
       headerName: 'Code', 
-      width: 100,
-      valueGetter: (params: any) => params.row?.code || 'N/A'
+      width: 100
     },
     {
       field: 'name',
       headerName: 'Product Name',
       width: 200,
-      flex: 1,
-      valueGetter: (params: any) => params.row?.name || 'N/A'
+      flex: 1
     },
     {
       field: 'category',
@@ -136,8 +135,7 @@ const ProductDashboard: React.FC = () => {
       field: 'reorderLevel',
       headerName: 'Reorder Level',
       width: 120,
-      type: 'number',
-      valueGetter: (params: any) => params.row?.reorderLevel || 0
+      type: 'number'
     },
     {
       field: 'discontinued',
@@ -269,10 +267,10 @@ const ProductDashboard: React.FC = () => {
         <CardContent>
           <Box sx={{ height: 600, width: '100%' }}>
             {dataReady && filteredProducts.length > 0 ? (
-              <DataGrid
-                rows={filteredProducts}
-                columns={columns}
-                getRowId={(row) => row.productId}
+                             <DataGrid
+                 rows={filteredProducts}
+                 columns={columns}
+                 getRowId={(row) => row.productId}
                 initialState={{
                   pagination: {
                     paginationModel: { page: 0, pageSize: 25 },
