@@ -1,7 +1,9 @@
 package com.northwind.service;
 
 import com.northwind.dto.ProductDto;
+import com.northwind.entity.Category;
 import com.northwind.entity.Product;
+import com.northwind.repository.CategoryRepository;
 import com.northwind.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -18,6 +20,7 @@ import java.util.Optional;
 public class ProductService {
     
     private final ProductRepository productRepository;
+    private final CategoryRepository categoryRepository;
     private final ProductMapper productMapper;
     
     public List<ProductDto> getAllProducts() {
@@ -72,12 +75,49 @@ public class ProductService {
     
     @Transactional
     public ProductDto updateProduct(Long id, ProductDto productDto) {
+        System.out.println("=== ProductService.updateProduct called ===");
+        System.out.println("Looking for product with ID: " + id);
+        System.out.println("ProductDto received: " + productDto);
+        
         return productRepository.findById(id)
                 .map(existingProduct -> {
-                    productMapper.updateEntity(productDto, existingProduct);
-                    return productMapper.toDto(productRepository.save(existingProduct));
+                    System.out.println("Found existing product: " + existingProduct);
+                    
+                    // カテゴリーの更新を手動で処理
+                    if (productDto.getCategory() != null && productDto.getCategory().getCategoryId() != null) {
+                        // カテゴリーIDが変更されている場合のみ更新
+                        if (existingProduct.getCategory() == null || 
+                            !existingProduct.getCategory().getCategoryId().equals(productDto.getCategory().getCategoryId())) {
+                            System.out.println("Updating category from " + 
+                                (existingProduct.getCategory() != null ? existingProduct.getCategory().getCategoryId() : "null") + 
+                                " to " + productDto.getCategory().getCategoryId());
+                            
+                            // データベースから正しいCategoryエンティティを取得
+                            Category newCategory = categoryRepository.findById(productDto.getCategory().getCategoryId())
+                                    .orElseThrow(() -> new RuntimeException("Category not found with id: " + productDto.getCategory().getCategoryId()));
+                            existingProduct.setCategory(newCategory);
+                        }
+                    }
+                    
+                    // その他のフィールドを更新（カテゴリー以外）
+                    existingProduct.setName(productDto.getName());
+                    existingProduct.setCode(productDto.getCode());
+                    existingProduct.setQuantityPerUnit(productDto.getQuantityPerUnit());
+                    existingProduct.setUnitPrice(productDto.getUnitPrice());
+                    existingProduct.setUnitCost(productDto.getUnitCost());
+                    existingProduct.setUnitsInStock(productDto.getUnitsInStock());
+                    existingProduct.setReorderLevel(productDto.getReorderLevel());
+                    existingProduct.setDiscontinued(productDto.getDiscontinued());
+                    
+                    System.out.println("Updated product: " + existingProduct);
+                    Product savedProduct = productRepository.save(existingProduct);
+                    System.out.println("Saved product: " + savedProduct);
+                    return productMapper.toDto(savedProduct);
                 })
-                .orElseThrow(() -> new RuntimeException("Product not found with id: " + id));
+                .orElseThrow(() -> {
+                    System.out.println("Product not found with id: " + id);
+                    return new RuntimeException("Product not found with id: " + id);
+                });
     }
     
     @Transactional

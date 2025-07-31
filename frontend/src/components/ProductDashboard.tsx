@@ -13,8 +13,9 @@ import {
   Switch,
 } from '@mui/material';
 import { DataGrid, GridColDef, GridRowParams } from '@mui/x-data-grid';
-import { Search, Refresh, Warning } from '@mui/icons-material';
+import { Search, Refresh, Warning, Add, Visibility, Edit, Delete } from '@mui/icons-material';
 import { Product, productService } from '../services/api';
+import ProductDetailDialog from './ProductDetailDialog';
 
 const ProductDashboard: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -25,6 +26,9 @@ const ProductDashboard: React.FC = () => {
   const [showActiveOnly, setShowActiveOnly] = useState(false);
   const [lowStockProducts, setLowStockProducts] = useState<Product[]>([]);
   const [dataReady, setDataReady] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [dialogMode, setDialogMode] = useState<'view' | 'edit' | 'create'>('view');
 
   const loadProducts = async () => {
     try {
@@ -159,11 +163,90 @@ const ProductDashboard: React.FC = () => {
         );
       },
     },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      width: 150,
+      sortable: false,
+      renderCell: (params: any) => (
+        <Box sx={{ display: 'flex', gap: 0.5 }}>
+          <Button
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleViewProduct(params.row);
+            }}
+            startIcon={<Visibility />}
+            sx={{ minWidth: 'auto', px: 1 }}
+          >
+            View
+          </Button>
+          <Button
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleEditProduct(params.row);
+            }}
+            startIcon={<Edit />}
+            sx={{ minWidth: 'auto', px: 1 }}
+          >
+            Edit
+          </Button>
+          <Button
+            size="small"
+            color="error"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDeleteProduct(params.row);
+            }}
+            startIcon={<Delete />}
+            sx={{ minWidth: 'auto', px: 1 }}
+          >
+            Delete
+          </Button>
+        </Box>
+      ),
+    },
   ];
 
   const handleRowClick = (params: GridRowParams) => {
-    console.log('Product clicked:', params.row);
-    // Here you could open a detailed view or edit dialog
+    setSelectedProduct(params.row);
+    setDialogMode('view');
+    setDialogOpen(true);
+  };
+
+  const handleViewProduct = (product: Product) => {
+    setSelectedProduct(product);
+    setDialogMode('view');
+    setDialogOpen(true);
+  };
+
+  const handleEditProduct = (product: Product) => {
+    setSelectedProduct(product);
+    setDialogMode('edit');
+    setDialogOpen(true);
+  };
+
+  const handleCreateProduct = () => {
+    setSelectedProduct(null);
+    setDialogMode('create');
+    setDialogOpen(true);
+  };
+
+  const handleDeleteProduct = async (product: Product) => {
+    if (window.confirm(`Are you sure you want to delete "${product.name}"?`)) {
+      try {
+        await productService.deleteProduct(product.productId);
+        await loadProducts(); // Reload the product list
+      } catch (err) {
+        console.error('Error deleting product:', err);
+        alert('Failed to delete product. Please try again.');
+      }
+    }
+  };
+
+  const handleSaveProduct = async (savedProduct: Product) => {
+    await loadProducts(); // Reload the product list
   };
 
   if (loading) {
@@ -258,14 +341,22 @@ const ProductDashboard: React.FC = () => {
           }
           label="Active products only"
         />
-        <Button
-          variant="outlined"
-          startIcon={<Refresh />}
-          onClick={loadProducts}
-          disabled={loading}
-        >
-          Refresh
-        </Button>
+                 <Button
+           variant="outlined"
+           startIcon={<Refresh />}
+           onClick={loadProducts}
+           disabled={loading}
+         >
+           Refresh
+         </Button>
+         <Button
+           variant="contained"
+           startIcon={<Add />}
+           onClick={handleCreateProduct}
+           disabled={loading}
+         >
+           Add Product
+         </Button>
       </Box>
 
       <Card>
@@ -302,10 +393,18 @@ const ProductDashboard: React.FC = () => {
               </Box>
             )}
           </Box>
-        </CardContent>
-      </Card>
-    </Box>
-  );
-};
+                 </CardContent>
+       </Card>
+
+       <ProductDetailDialog
+         open={dialogOpen}
+         product={selectedProduct}
+         onClose={() => setDialogOpen(false)}
+         onSave={handleSaveProduct}
+         mode={dialogMode}
+       />
+     </Box>
+   );
+ };
 
 export default ProductDashboard; 

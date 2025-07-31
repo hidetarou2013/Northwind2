@@ -84,10 +84,17 @@ public class ProductController {
     @PutMapping("/{id}")
     @Operation(summary = "Update an existing product")
     public ResponseEntity<ProductDto> updateProduct(@PathVariable Long id, @RequestBody ProductDto productDto) {
+        System.out.println("=== ProductController.updateProduct called ===");
+        System.out.println("Requested ID: " + id);
+        System.out.println("Received ProductDto: " + productDto);
+        
         try {
             ProductDto updatedProduct = productService.updateProduct(id, productDto);
+            System.out.println("Successfully updated product: " + updatedProduct);
             return ResponseEntity.ok(updatedProduct);
         } catch (RuntimeException e) {
+            System.out.println("Error updating product: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.notFound().build();
         }
     }
