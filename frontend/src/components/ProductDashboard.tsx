@@ -39,10 +39,17 @@ const ProductDashboard: React.FC = () => {
       ]);
       
       console.log('Products loaded:', data);
+      console.log('First product details:', data[0]);
       console.log('Low stock products:', lowStock);
-      setProducts(data);
-      setLowStockProducts(lowStock);
-      setDataReady(true);
+      
+      // Ensure data is valid before setting state
+      if (data && Array.isArray(data) && data.length > 0) {
+        setProducts(data);
+        setLowStockProducts(lowStock);
+        setDataReady(true);
+      } else {
+        setError('No product data received from server');
+      }
       
     } catch (err) {
       setError('Failed to load products. Please make sure the backend server is running.');
@@ -57,20 +64,22 @@ const ProductDashboard: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    let filtered = products;
-    
-    if (showActiveOnly) {
-      filtered = filtered.filter(product => !product.discontinued);
+    if (products.length > 0) {
+      let filtered = products;
+      
+      if (showActiveOnly) {
+        filtered = filtered.filter(product => !product.discontinued);
+      }
+      
+      if (searchTerm) {
+        filtered = filtered.filter(product =>
+          product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          product.code.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      }
+      
+      setFilteredProducts(filtered);
     }
-    
-    if (searchTerm) {
-      filtered = filtered.filter(product =>
-        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.code.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-    
-    setFilteredProducts(filtered);
   }, [products, searchTerm, showActiveOnly]);
 
   const columns: GridColDef[] = [
@@ -107,7 +116,7 @@ const ProductDashboard: React.FC = () => {
       width: 120,
       type: 'number',
       valueFormatter: (params: any) => {
-        if (params.value == null) {
+        if (params.value == null || params.value === 0) {
           return '$0.00';
         }
         return `$${Number(params.value).toFixed(2)}`;
@@ -266,8 +275,9 @@ const ProductDashboard: React.FC = () => {
       <Card>
         <CardContent>
           <Box sx={{ height: 600, width: '100%' }}>
-            {dataReady && filteredProducts.length > 0 ? (
-                             <DataGrid
+                         {dataReady && filteredProducts.length > 0 && !loading && products.length > 0 ? (
+               <DataGrid
+                 key={`dataGrid-${filteredProducts.length}-${dataReady}-${Date.now()}`}
                  rows={filteredProducts}
                  columns={columns}
                  getRowId={(row) => row.productId}
