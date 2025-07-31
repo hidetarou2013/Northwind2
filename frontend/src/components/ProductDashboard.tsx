@@ -38,15 +38,17 @@ const ProductDashboard: React.FC = () => {
         productService.getLowStockProducts()
       ]);
       
-      console.log('Products loaded:', data);
-      console.log('First product details:', data[0]);
-      console.log('Low stock products:', lowStock);
+      console.log('Products loaded:', data.length);
+      console.log('Low stock products:', lowStock.length);
       
       // Ensure data is valid before setting state
       if (data && Array.isArray(data) && data.length > 0) {
         setProducts(data);
         setLowStockProducts(lowStock);
-        setDataReady(true);
+        // Wait for next render cycle before setting dataReady
+        setTimeout(() => {
+          setDataReady(true);
+        }, 200);
       } else {
         setError('No product data received from server');
       }
@@ -78,7 +80,14 @@ const ProductDashboard: React.FC = () => {
         );
       }
       
-      setFilteredProducts(filtered);
+      // Pre-process data for DataGrid
+      const processedData = filtered.map(product => ({
+        ...product,
+        categoryName: product.category?.name || 'N/A',
+        formattedPrice: product.unitPrice ? `$${Number(product.unitPrice).toFixed(2)}` : '$0.00'
+      }));
+      
+      setFilteredProducts(processedData);
     }
   }, [products, searchTerm, showActiveOnly]);
 
@@ -100,27 +109,14 @@ const ProductDashboard: React.FC = () => {
       flex: 1
     },
     {
-      field: 'category',
+      field: 'categoryName',
       headerName: 'Category',
       width: 150,
-      valueGetter: (params: any) => {
-        if (!params.row || !params.row.category) {
-          return 'N/A';
-        }
-        return params.row.category.name || 'N/A';
-      },
     },
     {
-      field: 'unitPrice',
+      field: 'formattedPrice',
       headerName: 'Unit Price',
       width: 120,
-      type: 'number',
-      valueFormatter: (params: any) => {
-        if (params.value == null || params.value === 0) {
-          return '$0.00';
-        }
-        return `$${Number(params.value).toFixed(2)}`;
-      },
     },
     {
       field: 'unitsInStock',
@@ -275,9 +271,9 @@ const ProductDashboard: React.FC = () => {
       <Card>
         <CardContent>
           <Box sx={{ height: 600, width: '100%' }}>
-                         {dataReady && filteredProducts.length > 0 && !loading && products.length > 0 ? (
+                         {dataReady && filteredProducts.length > 0 && !loading ? (
                <DataGrid
-                 key={`dataGrid-${filteredProducts.length}-${dataReady}-${Date.now()}`}
+                 key={`dataGrid-${filteredProducts.length}-${dataReady}`}
                  rows={filteredProducts}
                  columns={columns}
                  getRowId={(row) => row.productId}
@@ -289,9 +285,9 @@ const ProductDashboard: React.FC = () => {
                 pageSizeOptions={[10, 25, 50, 100]}
                 checkboxSelection={false}
                 disableRowSelectionOnClick={false}
-                onRowClick={handleRowClick}
-                loading={false}
-                density="compact"
+                                 onRowClick={handleRowClick}
+                 loading={loading}
+                 density="compact"
                 sx={{
                   '& .MuiDataGrid-row:hover': {
                     cursor: 'pointer',
