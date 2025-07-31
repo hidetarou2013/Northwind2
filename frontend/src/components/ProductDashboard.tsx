@@ -183,7 +183,7 @@ const ProductDashboard: React.FC = () => {
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 200,
+      width: 250,
       sortable: false,
       renderCell: (params: any) => (
         <Box sx={{ display: 'flex', gap: 0.5 }}>
@@ -212,12 +212,13 @@ const ProductDashboard: React.FC = () => {
           <Button
             size="small"
             color="error"
+            variant="outlined"
             onClick={(e) => {
               e.stopPropagation();
               handleDeleteProduct(params.row);
             }}
             startIcon={<Delete />}
-            sx={{ minWidth: 'auto', px: 1, display: 'flex' }}
+            sx={{ minWidth: 'auto', px: 1, display: 'flex', fontSize: '0.75rem' }}
           >
             Delete
           </Button>
