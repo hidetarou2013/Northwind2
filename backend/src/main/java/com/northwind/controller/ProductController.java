@@ -77,8 +77,18 @@ public class ProductController {
     @PostMapping
     @Operation(summary = "Create a new product")
     public ResponseEntity<ProductDto> createProduct(@RequestBody ProductDto productDto) {
-        ProductDto createdProduct = productService.createProduct(productDto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdProduct);
+        System.out.println("=== ProductController.createProduct called ===");
+        System.out.println("Received ProductDto: " + productDto);
+        
+        try {
+            ProductDto createdProduct = productService.createProduct(productDto);
+            System.out.println("Successfully created product: " + createdProduct);
+            return ResponseEntity.status(HttpStatus.CREATED).body(createdProduct);
+        } catch (Exception e) {
+            System.out.println("Error creating product: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
     
     @PutMapping("/{id}")

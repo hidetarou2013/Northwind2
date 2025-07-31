@@ -68,9 +68,41 @@ public class ProductService {
     
     @Transactional
     public ProductDto createProduct(ProductDto productDto) {
-        Product product = productMapper.toEntity(productDto);
-        Product savedProduct = productRepository.save(product);
-        return productMapper.toDto(savedProduct);
+        System.out.println("=== ProductService.createProduct called ===");
+        System.out.println("ProductDto received: " + productDto);
+        
+        try {
+            // カテゴリーを手動で処理
+            Product product = new Product();
+            product.setName(productDto.getName());
+            product.setCode(productDto.getCode());
+            product.setQuantityPerUnit(productDto.getQuantityPerUnit());
+            product.setUnitPrice(productDto.getUnitPrice());
+            product.setUnitCost(productDto.getUnitCost());
+            product.setUnitsInStock(productDto.getUnitsInStock());
+            product.setReorderLevel(productDto.getReorderLevel());
+            product.setDiscontinued(productDto.getDiscontinued());
+            
+            // カテゴリーを正しく設定
+            if (productDto.getCategory() != null && productDto.getCategory().getCategoryId() != null) {
+                Category category = categoryRepository.findById(productDto.getCategory().getCategoryId())
+                        .orElseThrow(() -> new RuntimeException("Category not found with id: " + productDto.getCategory().getCategoryId()));
+                product.setCategory(category);
+            }
+            
+            System.out.println("Created entity: " + product);
+            
+            Product savedProduct = productRepository.save(product);
+            System.out.println("Saved product: " + savedProduct);
+            
+            ProductDto result = productMapper.toDto(savedProduct);
+            System.out.println("Returning DTO: " + result);
+            return result;
+        } catch (Exception e) {
+            System.out.println("Error creating product: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
     
     @Transactional
