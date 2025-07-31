@@ -19,6 +19,10 @@ export interface Product {
   unitsInStock: number;
   reorderLevel: number;
   discontinued: boolean;
+  deleted?: boolean;
+  deletedAt?: string;
+  deletedBy?: string;
+  deletionReason?: string;
   category?: {
     categoryId: number;
     name: string;
@@ -42,6 +46,11 @@ export interface PageResponse<T> {
   totalPages: number;
   size: number;
   number: number;
+}
+
+export interface DeleteResponse {
+  message?: string;
+  error?: string;
 }
 
 export const productService = {
@@ -80,6 +89,11 @@ export const productService = {
     return response.data;
   },
 
+  getDeletedProducts: async (): Promise<Product[]> => {
+    const response = await api.get('/products/deleted');
+    return response.data;
+  },
+
   createProduct: async (product: Omit<Product, 'productId'>): Promise<Product> => {
     const response = await api.post('/products', product);
     return response.data;
@@ -92,8 +106,21 @@ export const productService = {
     return response.data;
   },
 
-  deleteProduct: async (id: number): Promise<void> => {
-    await api.delete(`/products/${id}`);
+  deleteProduct: async (id: number): Promise<DeleteResponse> => {
+    const response = await api.delete(`/products/${id}`);
+    return response.data;
+  },
+
+  deleteProductWithReason: async (id: number, reason: string): Promise<DeleteResponse> => {
+    const response = await api.delete(`/products/${id}/with-reason`, {
+      data: { reason }
+    });
+    return response.data;
+  },
+
+  restoreProduct: async (id: number): Promise<DeleteResponse> => {
+    const response = await api.post(`/products/${id}/restore`);
+    return response.data;
   },
 };
 

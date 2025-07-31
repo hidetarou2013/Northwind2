@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
@@ -22,6 +23,13 @@ public class ProductDto {
     private Integer unitsInStock;
     private Integer reorderLevel;
     private Boolean discontinued;
+    
+    // 論理削除用フィールド
+    private Boolean deleted;
+    private LocalDateTime deletedAt;
+    private String deletedBy;
+    private String deletionReason;
+    
     private CategorySummaryDto category;
     private SupplierSummaryDto supplier;
 }

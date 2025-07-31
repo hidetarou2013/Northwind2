@@ -11,10 +11,16 @@ import {
   CircularProgress,
   FormControlLabel,
   Switch,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  DialogContentText,
+  Snackbar,
 } from '@mui/material';
 import { DataGrid, GridColDef, GridRowParams } from '@mui/x-data-grid';
 import { Search, Refresh, Warning, Add, Visibility, Edit, Delete } from '@mui/icons-material';
-import { Product, productService } from '../services/api';
+import { Product, productService, DeleteResponse } from '../services/api';
 import ProductDetailDialog from './ProductDetailDialog';
 
 const ProductDashboard: React.FC = () => {
@@ -29,6 +35,17 @@ const ProductDashboard: React.FC = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [dialogMode, setDialogMode] = useState<'view' | 'edit' | 'create'>('view');
+  
+  // 削除確認ダイアログ用の状態
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [deleteReason, setDeleteReason] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error' | 'info';
+  }>({ open: false, message: '', severity: 'info' });
 
   const loadProducts = async () => {
     try {
@@ -233,20 +250,60 @@ const ProductDashboard: React.FC = () => {
     setDialogOpen(true);
   };
 
-  const handleDeleteProduct = async (product: Product) => {
-    if (window.confirm(`Are you sure you want to delete "${product.name}"?`)) {
-      try {
-        await productService.deleteProduct(product.productId);
-        await loadProducts(); // Reload the product list
-      } catch (err) {
-        console.error('Error deleting product:', err);
-        alert('Failed to delete product. Please try again.');
+  const handleDeleteProduct = (product: Product) => {
+    setProductToDelete(product);
+    setDeleteReason('');
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!productToDelete) return;
+
+    setDeleteLoading(true);
+    try {
+      let response: DeleteResponse;
+      
+      if (deleteReason.trim()) {
+        response = await productService.deleteProductWithReason(productToDelete.productId, deleteReason);
+      } else {
+        response = await productService.deleteProduct(productToDelete.productId);
       }
+
+      if (response.error) {
+        setSnackbar({
+          open: true,
+          message: response.error,
+          severity: 'error'
+        });
+      } else {
+        setSnackbar({
+          open: true,
+          message: response.message || 'Product deleted successfully',
+          severity: 'success'
+        });
+        await loadProducts(); // Reload the product list
+      }
+    } catch (err) {
+      console.error('Error deleting product:', err);
+      setSnackbar({
+        open: true,
+        message: 'Failed to delete product. Please try again.',
+        severity: 'error'
+      });
+    } finally {
+      setDeleteLoading(false);
+      setDeleteDialogOpen(false);
+      setProductToDelete(null);
+      setDeleteReason('');
     }
   };
 
   const handleSaveProduct = async (savedProduct: Product) => {
     await loadProducts(); // Reload the product list
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
   };
 
   if (loading) {
@@ -403,6 +460,93 @@ const ProductDashboard: React.FC = () => {
          onSave={handleSaveProduct}
          mode={dialogMode}
        />
+
+       {/* 削除確認ダイアログ */}
+       <Dialog
+         open={deleteDialogOpen}
+         onClose={() => setDeleteDialogOpen(false)}
+         maxWidth="sm"
+         fullWidth
+       >
+         <DialogTitle>
+           Confirm Product Deletion
+         </DialogTitle>
+         <DialogContent>
+           <DialogContentText sx={{ mb: 2 }}>
+             Are you sure you want to delete <strong>"{productToDelete?.name}"</strong>?
+           </DialogContentText>
+           
+           {productToDelete && (
+             <Box sx={{ mb: 2 }}>
+               <Typography variant="body2" color="text.secondary" gutterBottom>
+                 <strong>Product Details:</strong>
+               </Typography>
+               <Typography variant="body2" sx={{ ml: 2 }}>
+                 • Stock: {productToDelete.unitsInStock || 0} units
+               </Typography>
+               <Typography variant="body2" sx={{ ml: 2 }}>
+                 • Status: {productToDelete.discontinued ? 'Discontinued' : 'Active'}
+               </Typography>
+               <Typography variant="body2" sx={{ ml: 2 }}>
+                 • Category: {productToDelete.category?.name || 'N/A'}
+               </Typography>
+             </Box>
+           )}
+           
+           <TextField
+             autoFocus
+             margin="dense"
+             label="Deletion Reason (Optional)"
+             type="text"
+             fullWidth
+             variant="outlined"
+             value={deleteReason}
+             onChange={(e) => setDeleteReason(e.target.value)}
+             placeholder="e.g., Product discontinued, Poor sales, etc."
+             multiline
+             rows={3}
+           />
+           
+           <Alert severity="info" sx={{ mt: 2 }}>
+             <Typography variant="body2">
+               <strong>Note:</strong> This is a logical delete. The product will be hidden from normal operations 
+               but can be restored later if needed. Past order history will be preserved.
+             </Typography>
+           </Alert>
+         </DialogContent>
+         <DialogActions>
+           <Button 
+             onClick={() => setDeleteDialogOpen(false)}
+             disabled={deleteLoading}
+           >
+             Cancel
+           </Button>
+           <Button 
+             onClick={handleConfirmDelete}
+             color="error"
+             variant="contained"
+             disabled={deleteLoading}
+           >
+             {deleteLoading ? <CircularProgress size={20} /> : 'Delete Product'}
+           </Button>
+         </DialogActions>
+       </Dialog>
+
+       {/* スナックバー */}
+       <Snackbar
+         open={snackbar.open}
+         autoHideDuration={6000}
+         onClose={handleCloseSnackbar}
+         anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+       >
+         <Alert 
+           onClose={handleCloseSnackbar} 
+           severity={snackbar.severity}
+           sx={{ width: '100%' }}
+         >
+           {snackbar.message}
+         </Alert>
+       </Snackbar>
      </Box>
    );
  };

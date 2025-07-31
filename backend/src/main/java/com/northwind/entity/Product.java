@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "nw_products")
@@ -43,6 +44,20 @@ public class Product extends BaseEntity {
     @Column(name = "discontinued")
     @Builder.Default
     private Boolean discontinued = false;
+    
+    // 論理削除用フィールド
+    @Column(name = "deleted")
+    @Builder.Default
+    private Boolean deleted = false;
+    
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+    
+    @Column(name = "deleted_by")
+    private String deletedBy;
+    
+    @Column(name = "deletion_reason")
+    private String deletionReason;
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category", referencedColumnName = "category_id")

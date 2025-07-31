@@ -3,6 +3,8 @@ package com.northwind.service;
 import com.northwind.dto.ProductDto;
 import com.northwind.entity.Category;
 import com.northwind.entity.Product;
+import com.northwind.exception.CannotDeleteProductException;
+import com.northwind.exception.ProductNotFoundException;
 import com.northwind.repository.CategoryRepository;
 import com.northwind.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -24,31 +27,32 @@ public class ProductService {
     private final ProductMapper productMapper;
     
     public List<ProductDto> getAllProducts() {
-        return productRepository.findAll()
+        return productRepository.findByDeletedFalse()
                 .stream()
                 .map(productMapper::toDto)
                 .toList();
     }
     
     public Page<ProductDto> getAllProducts(Pageable pageable) {
-        return productRepository.findAll(pageable)
+        return productRepository.findByDeletedFalse(pageable)
                 .map(productMapper::toDto);
     }
     
     public Optional<ProductDto> getProductById(Long id) {
         return productRepository.findById(id)
+                .filter(product -> !product.getDeleted())
                 .map(productMapper::toDto);
     }
     
     public List<ProductDto> getActiveProducts() {
-        return productRepository.findByDiscontinuedFalse()
+        return productRepository.findByDiscontinuedFalseAndDeletedFalse()
                 .stream()
                 .map(productMapper::toDto)
                 .toList();
     }
     
     public Page<ProductDto> searchProducts(String name, Pageable pageable) {
-        return productRepository.findByNameContainingIgnoreCase(name, pageable)
+        return productRepository.findByNameContainingIgnoreCaseAndDeletedFalse(name, pageable)
                 .map(productMapper::toDto);
     }
     
@@ -64,6 +68,39 @@ public class ProductService {
                 .stream()
                 .map(productMapper::toDto)
                 .toList();
+    }
+    
+    // 削除済み商品を取得（管理用）
+    public List<ProductDto> getDeletedProducts() {
+        return productRepository.findByDeletedTrue()
+                .stream()
+                .map(productMapper::toDto)
+                .toList();
+    }
+    
+    // 削除前の検証ロジック
+    private void validateProductDeletion(Product product) {
+        // 1. 在庫チェック
+        if (product.getUnitsInStock() != null && product.getUnitsInStock() > 0) {
+            throw new CannotDeleteProductException(
+                "Cannot delete product with remaining stock: " + product.getUnitsInStock() + " units. " +
+                "Please sell or return all stock before deleting."
+            );
+        }
+        
+        // 2. 進行中の注文チェック（将来的に実装）
+        // TODO: 注文エンティティが実装されたら、進行中の注文があるかチェック
+        
+        // 3. 既に削除済みかチェック
+        if (product.getDeleted()) {
+            throw new CannotDeleteProductException("Product is already deleted");
+        }
+    }
+    
+    // 現在のユーザーを取得（将来的にSpring Securityと連携）
+    private String getCurrentUser() {
+        // TODO: Spring Securityと連携して実際のユーザーを取得
+        return "system";
     }
     
     @Transactional
@@ -112,6 +149,7 @@ public class ProductService {
         System.out.println("ProductDto received: " + productDto);
         
         return productRepository.findById(id)
+                .filter(product -> !product.getDeleted()) // 削除済み商品は更新不可
                 .map(existingProduct -> {
                     System.out.println("Found existing product: " + existingProduct);
                     
@@ -148,12 +186,51 @@ public class ProductService {
                 })
                 .orElseThrow(() -> {
                     System.out.println("Product not found with id: " + id);
-                    return new RuntimeException("Product not found with id: " + id);
+                    return new ProductNotFoundException(id);
                 });
     }
     
     @Transactional
     public void deleteProduct(Long id) {
-        productRepository.deleteById(id);
+        deleteProduct(id, null);
+    }
+    
+    @Transactional
+    public void deleteProduct(Long id, String reason) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ProductNotFoundException(id));
+        
+        // 削除前の検証
+        validateProductDeletion(product);
+        
+        // 論理削除実行
+        product.setDeleted(true);
+        product.setDeletedAt(LocalDateTime.now());
+        product.setDeletedBy(getCurrentUser());
+        product.setDeletionReason(reason);
+        
+        productRepository.save(product);
+        
+        System.out.println("Product logically deleted: " + product.getName() + " (ID: " + id + ")");
+    }
+    
+    // 論理削除の取り消し（復元）
+    @Transactional
+    public void restoreProduct(Long id) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ProductNotFoundException(id));
+        
+        if (!product.getDeleted()) {
+            throw new RuntimeException("Product is not deleted");
+        }
+        
+        product.setDeleted(false);
+        product.setDeletedAt(null);
+        product.setDeletedBy(null);
+        product.setDeletionReason(null);
+        
+        productRepository.save(product);
+        
+        System.out.println("Product restored: " + product.getName() + " (ID: " + id + ")");
     }
 }

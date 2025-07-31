@@ -1,6 +1,8 @@
 package com.northwind.controller;
 
 import com.northwind.dto.ProductDto;
+import com.northwind.exception.CannotDeleteProductException;
+import com.northwind.exception.ProductNotFoundException;
 import com.northwind.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -12,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/products")
@@ -74,6 +77,13 @@ public class ProductController {
         return ResponseEntity.ok(products);
     }
     
+    @GetMapping("/deleted")
+    @Operation(summary = "Get all deleted products (admin only)")
+    public ResponseEntity<List<ProductDto>> getDeletedProducts() {
+        List<ProductDto> products = productService.getDeletedProducts();
+        return ResponseEntity.ok(products);
+    }
+    
     @PostMapping
     @Operation(summary = "Create a new product")
     public ResponseEntity<ProductDto> createProduct(@RequestBody ProductDto productDto) {
@@ -102,17 +112,65 @@ public class ProductController {
             ProductDto updatedProduct = productService.updateProduct(id, productDto);
             System.out.println("Successfully updated product: " + updatedProduct);
             return ResponseEntity.ok(updatedProduct);
-        } catch (RuntimeException e) {
+        } catch (ProductNotFoundException e) {
             System.out.println("Error updating product: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            System.out.println("Error updating product: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
     
     @DeleteMapping("/{id}")
-    @Operation(summary = "Delete a product")
-    public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
-        productService.deleteProduct(id);
-        return ResponseEntity.noContent().build();
+    @Operation(summary = "Delete a product (logical delete)")
+    public ResponseEntity<Map<String, String>> deleteProduct(@PathVariable Long id) {
+        try {
+            productService.deleteProduct(id);
+            return ResponseEntity.ok(Map.of("message", "Product deleted successfully"));
+        } catch (CannotDeleteProductException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", e.getMessage()));
+        } catch (ProductNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to delete product"));
+        }
+    }
+    
+    @DeleteMapping("/{id}/with-reason")
+    @Operation(summary = "Delete a product with reason")
+    public ResponseEntity<Map<String, String>> deleteProductWithReason(
+            @PathVariable Long id, 
+            @RequestBody Map<String, String> request) {
+        try {
+            String reason = request.get("reason");
+            productService.deleteProduct(id, reason);
+            return ResponseEntity.ok(Map.of("message", "Product deleted successfully"));
+        } catch (CannotDeleteProductException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", e.getMessage()));
+        } catch (ProductNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to delete product"));
+        }
+    }
+    
+    @PostMapping("/{id}/restore")
+    @Operation(summary = "Restore a deleted product")
+    public ResponseEntity<Map<String, String>> restoreProduct(@PathVariable Long id) {
+        try {
+            productService.restoreProduct(id);
+            return ResponseEntity.ok(Map.of("message", "Product restored successfully"));
+        } catch (ProductNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to restore product"));
+        }
     }
 }
