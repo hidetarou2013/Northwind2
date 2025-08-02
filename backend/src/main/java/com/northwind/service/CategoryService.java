@@ -21,7 +21,12 @@ public class CategoryService {
     public List<CategoryDto> getAllCategories() {
         List<Category> categories = categoryRepository.findAll();
         return categories.stream()
-                .map(categoryMapper::toDto)
+                .map(category -> {
+                    CategoryDto dto = categoryMapper.toDto(category);
+                    // 商品数を設定
+                    dto.setProductCount(category.getProducts() != null ? category.getProducts().size() : 0);
+                    return dto;
+                })
                 .collect(Collectors.toList());
     }
 
